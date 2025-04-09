@@ -20,12 +20,15 @@ from tqdm import tqdm
 # Load the IndoBERT model once
 model = SentenceTransformer("LazarusNLP/all-indobert-base-v4")
 
+
 def embed_text(text: str) -> list[float]:
     embedding = model.encode(text, convert_to_numpy=True, normalize_embeddings=True)
     return embedding.tolist()
 
+
 def connect_milvus():
     connections.connect(alias="default", host=MILVUS_HOST, port=MILVUS_PORT)
+
 
 def create_collection():
     if utility.has_collection(MILVUS_COLLECTION):
@@ -67,6 +70,7 @@ def create_collection():
     collection.load()
     return collection
 
+
 def insert_embeddings(df):
     connect_milvus()
     collection = create_collection()
@@ -85,17 +89,16 @@ def insert_embeddings(df):
 
     for _, row in tqdm(df.iterrows(), total=len(df), desc="Embedding rows"):
         # Use full content before truncation
-        full_text = f"{row['title']}\n\n{row['content']}\n\nFact: {row['fact']}\n\nConclusion: {row['conclusion']}"
-        chunks = splitter.split_text(full_text)
+        chunks = splitter.split_text(row["text"])
 
         for chunk in chunks:
             emb = embed_text(chunk)
             all_embeddings.append(emb)
             # Store truncated metadata for Milvus VARCHAR limits
-            titles.append(str(row['title'])[:512])
-            contents.append(str(row['content'])[:2048])
-            facts.append(str(row['fact'])[:2048])
-            conclusions.append(str(row['conclusion'])[:512])
+            titles.append(str(row["title"])[:512])
+            contents.append(str(row["content"])[:2000])
+            facts.append(str(row["fact"])[:2000])
+            conclusions.append(str(row["conclusion"])[:512])
 
     data = [
         all_embeddings,

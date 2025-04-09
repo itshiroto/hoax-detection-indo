@@ -1,5 +1,5 @@
 import pandas as pd
-from umn-hoax-detect.config import DATASET_PATH, COLUMNS
+from umn_hoax_detect.config import DATASET_PATH, COLUMNS
 
 
 def load_dataset():

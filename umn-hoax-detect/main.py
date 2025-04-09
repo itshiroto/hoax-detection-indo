@@ -1,4 +1,4 @@
-from umn-hoax-detect.data.loader import load_dataset
+from umn_hoax_detect.data.loader import load_dataset
 
 
 def main():

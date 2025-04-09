@@ -96,8 +96,9 @@ def insert_embeddings(df):
             all_embeddings.append(emb)
             # Store truncated metadata for Milvus VARCHAR limits
             titles.append(str(row["title"])[:512])
-            contents.append(str(row["content"])[:2000])
-            facts.append(str(row["fact"])[:2000])
+            # Save the chunk itself as 'content' metadata, truncated to 2048
+            contents.append(chunk[:2048])
+            facts.append(str(row["fact"])[:2048])
             conclusions.append(str(row["conclusion"])[:512])
 
     data = [

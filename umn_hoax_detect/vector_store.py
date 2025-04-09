@@ -8,6 +8,7 @@ from pymilvus import (
     utility,
     IndexType,
 )
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from umn_hoax_detect.config import (
     MILVUS_HOST,
     MILVUS_PORT,
@@ -68,17 +69,38 @@ def insert_embeddings(df):
     connect_milvus()
     collection = create_collection()
 
-    embeddings = []
-    for text in df["text"]:
-        emb = embed_text(text)
-        embeddings.append(emb)
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=512,
+        chunk_overlap=50,
+        separators=["\n\n", "\n", ".", " ", ""],
+    )
+
+    all_embeddings = []
+    titles = []
+    contents = []
+    facts = []
+    conclusions = []
+
+    for _, row in df.iterrows():
+        # Use full content before truncation
+        full_text = f"{row['title']}\n\n{row['content']}\n\nFact: {row['fact']}\n\nConclusion: {row['conclusion']}"
+        chunks = splitter.split_text(full_text)
+
+        for chunk in chunks:
+            emb = embed_text(chunk)
+            all_embeddings.append(emb)
+            # Store truncated metadata for Milvus VARCHAR limits
+            titles.append(str(row['title'])[:512])
+            contents.append(str(row['content'])[:2048])
+            facts.append(str(row['fact'])[:2048])
+            conclusions.append(str(row['conclusion'])[:512])
 
     data = [
-        embeddings,
-        df["title"].tolist(),
-        df["content"].tolist(),
-        df["fact"].tolist(),
-        df["conclusion"].tolist(),
+        all_embeddings,
+        titles,
+        contents,
+        facts,
+        conclusions,
     ]
 
     collection.insert(data)

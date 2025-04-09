@@ -81,33 +81,19 @@ def insert_embeddings(df):
         separators=["\n\n", "\n", ".", " ", ""],
     )
 
-    all_embeddings = []
-    titles = []
-    contents = []
-    facts = []
-    conclusions = []
-
     for _, row in tqdm(df.iterrows(), total=len(df), desc="Embedding rows"):
         # Use full content before truncation
         chunks = splitter.split_text(row["text"])
 
         for chunk in chunks:
             emb = embed_text(chunk)
-            all_embeddings.append(emb)
-            # Store truncated metadata for Milvus VARCHAR limits
-            titles.append(str(row["title"])[:512])
-            # Save the chunk itself as 'content' metadata, truncated to 2048
-            contents.append(chunk[:2048])
-            facts.append(str(row["fact"])[:2048])
-            conclusions.append(str(row["conclusion"])[:512])
+            data = [
+                emb,
+                str(row["title"])[:512],
+                str(row["content"])[:2000],
+                str(row["fact"])[:2000],
+                str(row["conclusion"])[:512],
+            ]
 
-    data = [
-        all_embeddings,
-        titles,
-        contents,
-        facts,
-        conclusions,
-    ]
-
-    collection.insert(data)
+            collection.insert(data)
     collection.flush()

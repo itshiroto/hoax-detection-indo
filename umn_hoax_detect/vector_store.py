@@ -51,6 +51,7 @@ def create_collection():
         FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=768),
         FieldSchema(name="title", dtype=DataType.VARCHAR, max_length=512),
         FieldSchema(name="content", dtype=DataType.VARCHAR, max_length=2048),
+        FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=2048),
         FieldSchema(name="fact", dtype=DataType.VARCHAR, max_length=2048),
         FieldSchema(name="conclusion", dtype=DataType.VARCHAR, max_length=512),
     ]
@@ -85,18 +86,22 @@ def insert_embeddings(df):
     embeddings = []
     titles = []
     contents = []
+    texts = []
     facts = []
     conclusions = []
 
     for _, row in tqdm(df.iterrows(), total=len(df), desc="Embedding rows"):
-        # Use full content before truncation
+        # Use full concatenated text before truncation
         chunks = splitter.split_text(row["text"])
 
         for chunk in chunks:
             emb = embed_text(chunk)
             embeddings.append(emb)
             titles.append(str(row["title"])[:512])
-            contents.append(chunk[:2048])
+            # Save original hoax content (truncated) as 'content' metadata
+            contents.append(str(row["content"])[:2048])
+            # Save chunk text (truncated) as 'text' metadata
+            texts.append(chunk[:2048])
             facts.append(str(row["fact"])[:2048])
             conclusions.append(str(row["conclusion"])[:512])
 
@@ -104,6 +109,7 @@ def insert_embeddings(df):
         embeddings,
         titles,
         contents,
+        texts,
         facts,
         conclusions,
     ]

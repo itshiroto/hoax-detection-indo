@@ -6,6 +6,7 @@ from pymilvus import (
     FieldSchema,
     DataType,
     utility,
+    IndexType,
 )
 from umn_hoax_detect.config import (
     MILVUS_HOST,
@@ -25,7 +26,19 @@ def connect_milvus():
 
 def create_collection():
     if utility.has_collection(MILVUS_COLLECTION):
-        return Collection(MILVUS_COLLECTION)
+        collection = Collection(MILVUS_COLLECTION)
+        # Check if index exists, if not, create it
+        if not collection.has_index():
+            collection.create_index(
+                field_name="embedding",
+                index_params={
+                    "index_type": "IVF_FLAT",
+                    "metric_type": "COSINE",
+                    "params": {"nlist": 128},
+                },
+            )
+        collection.load()
+        return collection
 
     fields = [
         FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
@@ -37,6 +50,17 @@ def create_collection():
     ]
     schema = CollectionSchema(fields, description="Hoax detection embeddings")
     collection = Collection(name=MILVUS_COLLECTION, schema=schema)
+
+    # Create index on embedding field
+    collection.create_index(
+        field_name="embedding",
+        index_params={
+            "index_type": "IVF_FLAT",
+            "metric_type": "COSINE",
+            "params": {"nlist": 128},
+        },
+    )
+
     collection.load()
     return collection
 

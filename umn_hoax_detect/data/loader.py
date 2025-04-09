@@ -10,6 +10,9 @@ def load_dataset():
     df = pd.read_csv(DATASET_PATH)
     df = df[COLUMNS].copy()
 
+    # Limit to first 100 rows temporarily
+    df = df.head(100)
+
     print("Done Reading!")
 
     # Basic cleaning: drop rows with missing values in important columns

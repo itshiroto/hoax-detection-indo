@@ -23,8 +23,8 @@ def load_dataset():
 
     # Truncate metadata fields for Milvus VARCHAR limits
     df["title"] = df["title"].astype(str).str.slice(0, 512)
-    df["content"] = df["content"].astype(str).str.slice(0, 2048)
-    df["fact"] = df["fact"].astype(str).str.slice(0, 2048)
+    df["content"] = df["content"].astype(str).str.slice(0, 2000)
+    df["fact"] = df["fact"].astype(str).str.slice(0, 2000)
     df["conclusion"] = df["conclusion"].astype(str).str.slice(0, 512)
 
     return df

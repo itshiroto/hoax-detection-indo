@@ -1,4 +1,8 @@
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if present
+load_dotenv()
 
 # Path to your Mafindo CSV dataset
 DATASET_PATH = os.getenv("DATASET_PATH", "hoax_1k.csv")
@@ -6,7 +10,7 @@ DATASET_PATH = os.getenv("DATASET_PATH", "hoax_1k.csv")
 # Columns to extract
 COLUMNS = ["title", "content", "fact", "conclusion"]
 
-# OpenRouter API key
+# OpenRouter API key (optional if using OpenRouter)
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 # Milvus connection settings

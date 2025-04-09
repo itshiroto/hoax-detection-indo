@@ -1,5 +1,4 @@
-import os
-import openai
+from sentence_transformers import SentenceTransformer
 from pymilvus import (
     connections,
     Collection,
@@ -9,22 +8,17 @@ from pymilvus import (
     utility,
 )
 from umn_hoax_detect.config import (
-    OPENROUTER_API_KEY,
     MILVUS_HOST,
     MILVUS_PORT,
     MILVUS_COLLECTION,
 )
 
-# Initialize OpenAI client via OpenRouter
-openai.api_key = OPENROUTER_API_KEY
-openai.api_base = "https://openrouter.ai/api/v1"
+# Load the IndoBERT model once
+model = SentenceTransformer("LazarusNLP/all-indobert-base-v4")
 
 def embed_text(text: str) -> list[float]:
-    response = openai.Embedding.create(
-        model="openai/text-embedding-3-small",
-        input=text,
-    )
-    return response["data"][0]["embedding"]
+    embedding = model.encode(text, convert_to_numpy=True, normalize_embeddings=True)
+    return embedding.tolist()
 
 def connect_milvus():
     connections.connect(alias="default", host=MILVUS_HOST, port=MILVUS_PORT)
@@ -35,7 +29,7 @@ def create_collection():
 
     fields = [
         FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
-        FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=1536),
+        FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=768),
         FieldSchema(name="title", dtype=DataType.VARCHAR, max_length=512),
         FieldSchema(name="content", dtype=DataType.VARCHAR, max_length=2048),
         FieldSchema(name="fact", dtype=DataType.VARCHAR, max_length=2048),

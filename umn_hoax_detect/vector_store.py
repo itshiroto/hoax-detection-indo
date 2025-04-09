@@ -81,19 +81,32 @@ def insert_embeddings(df):
         separators=["\n\n", "\n", ".", " ", ""],
     )
 
+    # Prepare lists for batch insert
+    embeddings = []
+    titles = []
+    contents = []
+    facts = []
+    conclusions = []
+
     for _, row in tqdm(df.iterrows(), total=len(df), desc="Embedding rows"):
         # Use full content before truncation
         chunks = splitter.split_text(row["text"])
 
         for chunk in chunks:
             emb = embed_text(chunk)
-            data = [
-                emb,
-                str(row["title"])[:512],
-                str(row["content"])[:2000],
-                str(row["fact"])[:2000],
-                str(row["conclusion"])[:512],
-            ]
+            embeddings.append(emb)
+            titles.append(str(row["title"])[:512])
+            contents.append(chunk[:2048])
+            facts.append(str(row["fact"])[:2048])
+            conclusions.append(str(row["conclusion"])[:512])
 
-            collection.insert(data)
+    data = [
+        embeddings,
+        titles,
+        contents,
+        facts,
+        conclusions,
+    ]
+
+    collection.insert(data)
     collection.flush()

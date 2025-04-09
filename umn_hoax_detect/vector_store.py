@@ -15,6 +15,8 @@ from umn_hoax_detect.config import (
     MILVUS_COLLECTION,
 )
 
+from tqdm import tqdm
+
 # Load the IndoBERT model once
 model = SentenceTransformer("LazarusNLP/all-indobert-base-v4")
 
@@ -81,7 +83,7 @@ def insert_embeddings(df):
     facts = []
     conclusions = []
 
-    for _, row in df.iterrows():
+    for _, row in tqdm(df.iterrows(), total=len(df), desc="Embedding rows"):
         # Use full content before truncation
         full_text = f"{row['title']}\n\n{row['content']}\n\nFact: {row['fact']}\n\nConclusion: {row['conclusion']}"
         chunks = splitter.split_text(full_text)

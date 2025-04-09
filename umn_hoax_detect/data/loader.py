@@ -10,6 +10,8 @@ def load_dataset():
     df = pd.read_csv(DATASET_PATH)
     df = df[COLUMNS].copy()
 
+    print("Done Reading!")
+
     # Basic cleaning: drop rows with missing values in important columns
     df.dropna(subset=["title", "content"], inplace=True)
 

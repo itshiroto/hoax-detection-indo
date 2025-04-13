@@ -41,10 +41,10 @@ def call_openrouter(prompt, model="google/gemini-2.0-flash-001", max_tokens=512)
         return None
 
 
-def build_prompt(user_query, retrieved_chunks):
+def build_prompt(user_query, retrieved_chunks, tavily_results=None):
     """
-    Build a prompt for the LLM using the user query and retrieved context,
-    and include sources for each chunk.
+    Build a prompt for the LLM using the user query, retrieved context,
+    and (optionally) Tavily news search results.
     """
     context = ""
     for i, chunk in enumerate(retrieved_chunks, 1):
@@ -57,9 +57,20 @@ def build_prompt(user_query, retrieved_chunks):
             f"Conclusion: {chunk['conclusion']}\n"
             f"Sumber: {chunk['title']}\n"
         )
+    tavily_context = ""
+    if tavily_results:
+        tavily_context += "\n\nTavily News Search Results:"
+        for i, res in enumerate(tavily_results, 1):
+            tavily_context += (
+                f"\nResult {i}:\n"
+                f"Title: {res.get('title')}\n"
+                f"URL: {res.get('url')}\n"
+                f"Snippet: {res.get('snippet')}\n"
+            )
     prompt = (
         f"User Query:\n{user_query}\n"
         f"\nRetrieved Hoax Chunks (with sources):{context}\n"
+        f"{tavily_context}\n"
         "Based on the above, is the user query a hoax or not? Please provide a verdict, a brief explanation in Indonesian, and list the sources (Sumber) you used."
     )
     return prompt
@@ -136,8 +147,15 @@ def main():
                 print(f"Title: {res.get('title')}")
                 print(f"URL: {res.get('url')}")
                 print(f"Snippet: {res.get('snippet')}")
+        # Optionally, call LLM with only Tavily results
+        if not args.no_llm:
+            prompt = build_prompt(query, [], tavily_results)
+            print("\n=== LLM Verdict & Explanation ===")
+            verdict = call_openrouter(prompt)
+            print(verdict if verdict else "No response from LLM.")
         return
 
+    # Always use both vector db and Tavily for robust fact checking
     results = search_similar_chunks(query, top_k=5)
     print("\nTop similar chunks:")
     for i, hit in enumerate(results, 1):
@@ -148,8 +166,17 @@ def main():
         print(f"Fact: {hit['fact']}")
         print(f"Conclusion: {hit['conclusion']}")
 
+    tavily_results = call_tavily_api(query, max_results=5)
+    if tavily_results:
+        print("\nTavily News Search Results:")
+        for i, res in enumerate(tavily_results, 1):
+            print(f"\nResult {i}:")
+            print(f"Title: {res.get('title')}")
+            print(f"URL: {res.get('url')}")
+            print(f"Snippet: {res.get('snippet')}")
+
     if not args.no_llm:
-        prompt = build_prompt(query, results)
+        prompt = build_prompt(query, results, tavily_results)
         print("\n=== LLM Verdict & Explanation ===")
         verdict = call_openrouter(prompt)
         print(verdict if verdict else "No response from LLM.")

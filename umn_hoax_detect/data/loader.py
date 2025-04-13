@@ -20,7 +20,10 @@ def load_dataset():
 
     # Create embedding text from full content BEFORE truncation
     df["text"] = df.apply(
-        lambda row: f"{row['title']}\n\n{row['content']}\n\nFact: {row['fact']}\n\nConclusion: {row['conclusion']}",
+        lambda row: (
+            f"{row['title']}\n\n{row['content']}\n\nFact: {row['fact']}\n\nConclusion: {row['conclusion']}\n\n"
+            f"Sumber: {row['title']}"
+        ),
         axis=1,
     )
 

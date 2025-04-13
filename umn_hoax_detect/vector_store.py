@@ -21,10 +21,12 @@ from tqdm import tqdm
 model = SentenceTransformer("LazarusNLP/all-indobert-base-v4")
 
 
-def search_similar_chunks(query, top_k=5):
+SIMILARITY_THRESHOLD = 0.6  # Only keep results with cosine similarity >= 0.6
+
+def search_similar_chunks(query, top_k=5, threshold=SIMILARITY_THRESHOLD):
     """
     Given a query string, embed it, search Milvus for top_k most similar chunks,
-    and return the metadata for those chunks.
+    and return the metadata for those chunks, filtered by similarity threshold.
     """
     from pymilvus import Collection
 
@@ -48,9 +50,9 @@ def search_similar_chunks(query, top_k=5):
         output_fields=["title", "content", "text", "fact", "conclusion"],
     )
 
-    # Parse and return results
+    # Parse and filter results by similarity threshold
     hits = results[0]
-    return [
+    filtered_hits = [
         {
             "score": hit.distance,
             "title": hit.entity.get("title"),
@@ -60,7 +62,9 @@ def search_similar_chunks(query, top_k=5):
             "conclusion": hit.entity.get("conclusion"),
         }
         for hit in hits
+        if 1 - hit.distance >= threshold  # cosine similarity = 1 - distance
     ]
+    return filtered_hits
 
 
 def embed_text(text: str) -> list[float]:

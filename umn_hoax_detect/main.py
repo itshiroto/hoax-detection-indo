@@ -65,6 +65,35 @@ def build_prompt(user_query, retrieved_chunks):
     return prompt
 
 
+def call_tavily_api(query, max_results=3):
+    """
+    Call the Tavily API to search for news articles related to the query.
+    Returns a list of dicts with 'title', 'url', and 'snippet'.
+    """
+    tavily_api_key = os.getenv("TAVILY_API_KEY")
+    if not tavily_api_key:
+        print("TAVILY_API_KEY not set in environment.")
+        return []
+
+    url = "https://api.tavily.com/search"
+    headers = {
+        "Authorization": f"Bearer {tavily_api_key}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "query": query,
+        "num_results": max_results,
+        "search_type": "news"
+    }
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        return data.get("results", [])
+    except Exception as e:
+        print(f"Tavily API error: {e}")
+        return []
+
 def main():
     parser = argparse.ArgumentParser(description="Hoax News RAG System")
     parser.add_argument(
@@ -77,9 +106,14 @@ def main():
         action="store_true",
         help="Skip LLM generation and only show retrieved chunks",
     )
+    parser.add_argument(
+        "--tavily-only",
+        action="store_true",
+        help="Skip vector DB and only use Tavily news search",
+    )
     args = parser.parse_args()
 
-    if not args.skip_embedding:
+    if not args.skip_embedding and not args.tavily_only:
         df = load_dataset()
         print(f"Loaded {len(df)} hoax entries.")
         print(df.head(3))
@@ -88,9 +122,22 @@ def main():
         insert_embeddings(df)
         print("Done.")
 
-    # --- Retrieval demo ---
     print("\n=== Retrieval Demo ===")
     query = input("Enter a news title or content to check for similar hoax chunks: ")
+
+    if args.tavily_only:
+        tavily_results = call_tavily_api(query, max_results=5)
+        if not tavily_results:
+            print("No results or error from Tavily API.")
+        else:
+            print("\nTavily News Search Results:")
+            for i, res in enumerate(tavily_results, 1):
+                print(f"\nResult {i}:")
+                print(f"Title: {res.get('title')}")
+                print(f"URL: {res.get('url')}")
+                print(f"Snippet: {res.get('snippet')}")
+        return
+
     results = search_similar_chunks(query, top_k=5)
     print("\nTop similar chunks:")
     for i, hit in enumerate(results, 1):

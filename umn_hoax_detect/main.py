@@ -5,7 +5,8 @@ from umn_hoax_detect.vector_store import insert_embeddings, search_similar_chunk
 import requests
 import os
 
-def call_openrouter(prompt, model="openai/gpt-3.5-turbo", max_tokens=512):
+
+def call_openrouter(prompt, model="google/gemini-2.0-flash-001", max_tokens=512):
     """
     Call OpenRouter API with the constructed prompt and return the response.
     """
@@ -22,7 +23,10 @@ def call_openrouter(prompt, model="openai/gpt-3.5-turbo", max_tokens=512):
     payload = {
         "model": model,
         "messages": [
-            {"role": "system", "content": "You are an AI assistant for hoax detection. Given a user query and retrieved context, provide a verdict and explanation."},
+            {
+                "role": "system",
+                "content": "You are an AI assistant for hoax detection. Given a user query and retrieved context, provide a verdict and explanation.",
+            },
             {"role": "user", "content": prompt},
         ],
         "max_tokens": max_tokens,
@@ -35,6 +39,7 @@ def call_openrouter(prompt, model="openai/gpt-3.5-turbo", max_tokens=512):
     except Exception as e:
         print(f"OpenRouter API error: {e}")
         return None
+
 
 def build_prompt(user_query, retrieved_chunks):
     """
@@ -56,6 +61,7 @@ def build_prompt(user_query, retrieved_chunks):
         "Based on the above, is the user query a hoax or not? Please provide a verdict and a brief explanation in Indonesian."
     )
     return prompt
+
 
 def main():
     parser = argparse.ArgumentParser(description="Hoax News RAG System")

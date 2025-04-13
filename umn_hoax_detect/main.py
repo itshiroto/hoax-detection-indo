@@ -1,15 +1,25 @@
+import argparse
 from umn_hoax_detect.data.loader import load_dataset
 from umn_hoax_detect.vector_store import insert_embeddings, search_similar_chunks
 
 
 def main():
-    df = load_dataset()
-    print(f"Loaded {len(df)} hoax entries.")
-    print(df.head(3))
+    parser = argparse.ArgumentParser(description="Hoax News RAG System")
+    parser.add_argument(
+        "--skip-embedding",
+        action="store_true",
+        help="Skip embedding/insertion and go straight to searching",
+    )
+    args = parser.parse_args()
 
-    print("Embedding and inserting into Milvus...")
-    insert_embeddings(df)
-    print("Done.")
+    if not args.skip_embedding:
+        df = load_dataset()
+        print(f"Loaded {len(df)} hoax entries.")
+        print(df.head(3))
+
+        print("Embedding and inserting into Milvus...")
+        insert_embeddings(df)
+        print("Done.")
 
     # --- Retrieval demo ---
     print("\n=== Retrieval Demo ===")

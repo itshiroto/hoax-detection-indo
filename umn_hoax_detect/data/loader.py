@@ -11,7 +11,7 @@ def load_dataset():
     df = df[COLUMNS].copy()
 
     # Limit to first 100 rows temporarily
-    df = df.head(100)
+    # df = df.head(100)
 
     print("Done Reading!")
 

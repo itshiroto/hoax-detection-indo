@@ -6,7 +6,7 @@ import requests
 import os
 
 
-def call_openrouter(prompt, model="google/gemini-2.0-flash-001", max_tokens=512):
+def call_openrouter(prompt, model="google/gemma-3-27b-it", max_tokens=512):
     """
     Call OpenRouter API with the constructed prompt and return the response.
     """
@@ -46,7 +46,7 @@ def build_prompt(user_query, retrieved_chunks, tavily_results=None):
     Build a prompt for the LLM using the user query, retrieved context,
     and (optionally) Tavily news search results.
     """
-    context = ""
+    context = "Database Results:\n\n"
     for i, chunk in enumerate(retrieved_chunks, 1):
         context += (
             f"\n---\n"
@@ -59,19 +59,20 @@ def build_prompt(user_query, retrieved_chunks, tavily_results=None):
         )
     tavily_context = ""
     if tavily_results:
-        tavily_context += "\n\nTavily News Search Results:"
+        tavily_context += "\n\nWeb Search Results:"
         for i, res in enumerate(tavily_results, 1):
             tavily_context += (
                 f"\nResult {i}:\n"
                 f"Title: {res.get('title')}\n"
                 f"URL: {res.get('url')}\n"
-                f"Snippet: {res.get('snippet')}\n"
+                f"Content: {res.get('content')}\n"
+                f"Score: {res.get('score')}\n"
             )
     prompt = (
         f"User Query:\n{user_query}\n"
         f"\nRetrieved Hoax Chunks (with sources):{context}\n"
         f"{tavily_context}\n"
-        "Based on the above, is the user query a hoax or not? Please provide a verdict, a brief explanation in Indonesian, and list the sources (Sumber) you used."
+        "Based on the above information, determine if the user query a hoax or not (fact). Please provide a verdict, a brief explanation in Indonesian, and list the sources (Sumber) you used."
     )
     return prompt
 
@@ -91,11 +92,7 @@ def call_tavily_api(query, max_results=3):
         "Authorization": f"Bearer {tavily_api_key}",
         "Content-Type": "application/json",
     }
-    payload = {
-        "query": query,
-        "num_results": max_results,
-        "search_type": "news"
-    }
+    payload = {"query": query, "num_results": max_results, "search_type": "news"}
     try:
         response = requests.post(url, headers=headers, json=payload, timeout=30)
         response.raise_for_status()
@@ -104,6 +101,7 @@ def call_tavily_api(query, max_results=3):
     except Exception as e:
         print(f"Tavily API error: {e}")
         return []
+
 
 def main():
     parser = argparse.ArgumentParser(description="Hoax News RAG System")
@@ -173,7 +171,8 @@ def main():
             print(f"\nResult {i}:")
             print(f"Title: {res.get('title')}")
             print(f"URL: {res.get('url')}")
-            print(f"Snippet: {res.get('snippet')}")
+            print(f"Content: {res.get('content')}")
+            print(f"Score: {res.get('score')}")
 
     if not args.no_llm:
         prompt = build_prompt(query, results, tavily_results)

@@ -27,6 +27,7 @@ def search_similar_chunks(query, top_k=5):
     and return the metadata for those chunks.
     """
     from pymilvus import Collection
+
     connect_milvus()
     collection = Collection(MILVUS_COLLECTION)
     collection.load()
@@ -91,10 +92,10 @@ def create_collection():
         FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
         FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=768),
         FieldSchema(name="title", dtype=DataType.VARCHAR, max_length=512),
-        FieldSchema(name="content", dtype=DataType.VARCHAR, max_length=2048),
-        FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=2048),
-        FieldSchema(name="fact", dtype=DataType.VARCHAR, max_length=2048),
-        FieldSchema(name="conclusion", dtype=DataType.VARCHAR, max_length=512),
+        FieldSchema(name="content", dtype=DataType.VARCHAR, max_length=8192),
+        FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=8192),
+        FieldSchema(name="fact", dtype=DataType.VARCHAR, max_length=8192),
+        FieldSchema(name="conclusion", dtype=DataType.VARCHAR, max_length=4096),
     ]
     schema = CollectionSchema(fields, description="Hoax detection embeddings")
     collection = Collection(name=MILVUS_COLLECTION, schema=schema)

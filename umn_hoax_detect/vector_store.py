@@ -21,6 +21,47 @@ from tqdm import tqdm
 model = SentenceTransformer("LazarusNLP/all-indobert-base-v4")
 
 
+def search_similar_chunks(query, top_k=5):
+    """
+    Given a query string, embed it, search Milvus for top_k most similar chunks,
+    and return the metadata for those chunks.
+    """
+    from pymilvus import Collection
+    connect_milvus()
+    collection = Collection(MILVUS_COLLECTION)
+    collection.load()
+
+    # Embed the query
+    query_embedding = embed_text(query)
+
+    # Perform vector search
+    search_params = {
+        "metric_type": "COSINE",
+        "params": {"nprobe": 10},
+    }
+    results = collection.search(
+        data=[query_embedding],
+        anns_field="embedding",
+        param=search_params,
+        limit=top_k,
+        output_fields=["title", "content", "text", "fact", "conclusion"],
+    )
+
+    # Parse and return results
+    hits = results[0]
+    return [
+        {
+            "score": hit.distance,
+            "title": hit.entity.get("title"),
+            "content": hit.entity.get("content"),
+            "text": hit.entity.get("text"),
+            "fact": hit.entity.get("fact"),
+            "conclusion": hit.entity.get("conclusion"),
+        }
+        for hit in hits
+    ]
+
+
 def embed_text(text: str) -> list[float]:
     embedding = model.encode(text, convert_to_numpy=True, normalize_embeddings=True)
     return embedding.tolist()

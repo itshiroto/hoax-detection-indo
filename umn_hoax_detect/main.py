@@ -43,7 +43,8 @@ def call_openrouter(prompt, model="google/gemini-2.0-flash-001", max_tokens=512)
 
 def build_prompt(user_query, retrieved_chunks):
     """
-    Build a prompt for the LLM using the user query and retrieved context.
+    Build a prompt for the LLM using the user query and retrieved context,
+    and include sources for each chunk.
     """
     context = ""
     for i, chunk in enumerate(retrieved_chunks, 1):
@@ -54,11 +55,12 @@ def build_prompt(user_query, retrieved_chunks):
             f"Content: {chunk['content']}\n"
             f"Fact: {chunk['fact']}\n"
             f"Conclusion: {chunk['conclusion']}\n"
+            f"Sumber: {chunk['title']}\n"
         )
     prompt = (
         f"User Query:\n{user_query}\n"
-        f"\nRetrieved Hoax Chunks:{context}\n"
-        "Based on the above, is the user query a hoax or not? Please provide a verdict and a brief explanation in Indonesian."
+        f"\nRetrieved Hoax Chunks (with sources):{context}\n"
+        "Based on the above, is the user query a hoax or not? Please provide a verdict, a brief explanation in Indonesian, and list the sources (Sumber) you used."
     )
     return prompt
 

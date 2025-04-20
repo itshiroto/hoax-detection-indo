@@ -1,9 +1,22 @@
 import argparse
 from umn_hoax_detect.data.loader import load_dataset
 from umn_hoax_detect.vector_store import insert_embeddings, search_similar_chunks
+import json
+import os
+from pathlib import Path
 
 import requests
-import os
+
+
+def load_trusted_domains():
+    """Load the list of trusted domains from JSON file"""
+    config_path = Path(__file__).parent / "config" / "trusted_domains.json"
+    try:
+        with open(config_path, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"Error loading trusted domains: {e}")
+        return []
 
 
 def call_openrouter(prompt, model="google/gemma-3-27b-it", max_tokens=512):
@@ -93,6 +106,10 @@ def call_tavily_api(query, max_results=3):
         print("TAVILY_API_KEY not set in environment.")
         return []
 
+    trusted_domains = load_trusted_domains()
+    if not trusted_domains:
+        print("Warning: No trusted domains loaded, falling back to unrestricted search")
+
     url = "https://api.tavily.com/search"
     headers = {
         "Authorization": f"Bearer {tavily_api_key}",
@@ -102,31 +119,7 @@ def call_tavily_api(query, max_results=3):
         "query": query,
         "num_results": max_results,
         "search_type": "news",
-        "include_domains": [
-            "turnbackhoax.id", "analisadaily.com", "arungmedia.com", "balipost.com", "batamnews.co.id",
-            "batampos.co.id", "batamtoday.com", "berazam.com", "beritamanado.com", "beritapagi.co.id",
-            "bisnis.com", "bisnispapua.net", "bola.com", "bunaken.co.id", "bumntrack.com",
-            "cumi-cumi.com", "detikkawanua.com", "detiknews.com", "detiksumsel.com", "djakalodang.co.id",
-            "dream.co.id", "elshinta.com", "equator-news.com", "femina.co.id", "gatra.com",
-            "goriau.com", "halloriau.com", "haluanriaupress.com", "harianhaluan.com", "harianjogja.com",
-            "indopos.co.id", "indshangbao.com", "inforiau.com", "jamberita.com", "jambiindependent.co.id",
-            "jawapos.com", "jektv.co.id", "jpnn.com", "kompas.com", "kontan.co.id",
-            "koran-jakarta.com", "koranmerapi.com", "kr.co.id", "kronline.co", "lampungpost.com",
-            "liputan6.com", "malang-post.com", "manadonews.co.id", "mediaindonesia.com", "metrojambi.com",
-            "metroriau.com", "metrotvnews.com", "neraca.co.id", "netralnews.com", "newshunter.com",
-            "palpres.com", "pekanbarumx.net", "pikiran-rakyat.com", "pontianakpost.com", "radarjogja.co.id",
-            "radarlampung.co.id", "radarmalang.id", "radarpekanbaru.com", "radarsemarang.com", "rakyatmerdeka.co.id",
-            "riaumandiri.co", "riaupos.com", "riaupotenza.com", "riauterkini.com", "sbo.co.id",
-            "sinarharapan.co", "sindonews.com", "siwalimanews.com", "solopos.com", "suaramerdeka.com",
-            "suarapembaruan.com", "sulutdaily.com", "sulutnews.com", "sumeks.co.id", "swa.co.id",
-            "tabloidjubi.com", "tabloidsinartani.com", "tabloidwanitaindonesia.co.id", "telegrafnews.co.id", "tempo.co",
-            "thejakartapost.com", "timesindonesia.co.id", "tirto.id", "transtv.co.id", "tribunjambi.com",
-            "tribunjateng.com", "tribunnews.com", "trubus-online.co.id", "ummi-online.com", "uzone.co.id",
-            "www.arah.com", "www.facebook.com/groups/fafhh/", "www.facebook.com/IndoHoaxBuster/", "www.facebook.com/sekoci.indo/", "www.fajar.co.id",
-            "www.hariansinggalang.co.id", "www.indosiar.com", "www.kaltimpos.co.id", "www.kbr.id", "www.koran-sindo.com",
-            "www.mncgroup.com", "www.okezone.com", "www.padangekspres.co.id", "www.republika.co.id", "www.rmol.co",
-            "www.sctv.co.id", "www.viva.co.id"
-        ]
+        "include_domains": trusted_domains if trusted_domains else None
     }
     try:
         response = requests.post(url, headers=headers, json=payload, timeout=30)

@@ -20,11 +20,18 @@
               venvShellHook
               flake8
               pandas
+              requests
+
+              fastapi
+              uvicorn
+              gradio
+              openai
 
               langchain
               langchain-community
               langchain-core
-              langchain-openai
+
+              sentence-transformers
 
               langgraph
               pydantic

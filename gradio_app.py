@@ -4,6 +4,7 @@ import os
 
 API_URL = os.getenv("FACTCHECK_API_URL", "http://localhost:8000/fact_check")
 
+
 def fact_check_interface(query, use_vector_db, use_tavily):
     payload = {
         "query": query,
@@ -21,6 +22,7 @@ def fact_check_interface(query, use_vector_db, use_tavily):
         return verdict, explanation, sources_str
     except Exception as e:
         return "Error", f"API error: {e}", ""
+
 
 with gr.Blocks() as demo:
     gr.Markdown("# Hoax News Fact Checking Demo")

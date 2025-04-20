@@ -21,7 +21,8 @@ from tqdm import tqdm
 model = SentenceTransformer("LazarusNLP/all-indobert-base-v4")
 
 
-SIMILARITY_THRESHOLD = 0.6  # Only keep results with cosine similarity >= 0.6
+SIMILARITY_THRESHOLD = 0.3  # Only keep results with cosine similarity >= 0.6
+
 
 def search_similar_chunks(query, top_k=5, threshold=SIMILARITY_THRESHOLD):
     """

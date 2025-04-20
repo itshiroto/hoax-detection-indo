@@ -72,7 +72,13 @@ def build_prompt(user_query, retrieved_chunks, tavily_results=None):
         f"User Query:\n{user_query}\n"
         f"\nRetrieved Hoax Chunks (with sources):{context}\n"
         f"{tavily_context}\n"
-        "Based on the above information, determine if the user query a hoax or not (fact). Please provide a verdict, a brief explanation in Indonesian, and list the sources (Sumber) you used."
+        "Based on the above information and your own knowledge, determine if the user query is factual or a hoax. "
+        "First analyze the provided sources, then apply your own knowledge if needed. "
+        "Provide:\n"
+        "1. A clear verdict (HOAX or FACT)\n"
+        "2. A detailed explanation in Indonesian\n"
+        "3. Sources used (if any)\n"
+        "4. Whether your conclusion is based on provided sources, your knowledge, or both"
     )
     return prompt
 

@@ -34,6 +34,7 @@ def insert_embeddings(df):
     texts = []
     facts = []
     conclusions = []
+    references = [] # Added references list
 
     for _, row in tqdm(df.iterrows(), total=len(df), desc="Embedding rows"):
         # Use full concatenated text before truncation
@@ -49,6 +50,8 @@ def insert_embeddings(df):
             texts.append(chunk[:2048])
             facts.append(str(row["fact"])[:2048])
             conclusions.append(str(row["conclusion"])[:512])
+            # Assuming 'references' is a column in your DataFrame
+            references.append(str(row.get("references", ""))[:2048]) # Added references
 
     data = [
         embeddings,
@@ -57,6 +60,7 @@ def insert_embeddings(df):
         texts,
         facts,
         conclusions,
+        references, # Added references to data list
     ]
 
     collection.insert(data)

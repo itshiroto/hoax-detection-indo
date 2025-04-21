@@ -16,7 +16,7 @@ def embed_text(text: str) -> list[float]:
 
 def insert_embeddings(df):
     """
-    Process dataframe, chunk text, embed, and insert into Milvus.
+    Process dataframe, chunk text, embed, and insert into Milvus in batches.
     """
     connect_milvus()
     # Assuming create_collection is called elsewhere to ensure the collection exists
@@ -36,10 +36,12 @@ def insert_embeddings(df):
     texts = []
     facts = []
     conclusions = []
-    references = []  # Added references list
+    references = []
 
-    for _, row in tqdm(df.iterrows(), total=len(df), desc="Embedding rows"):
-        # Use full concatenated text before truncation
+    batch_size = 1000
+    inserted_count = 0
+
+    for _, row in tqdm(df.iterrows(), total=len(df), desc="Processing rows for embedding"):
         chunks = splitter.split_text(row["text"])
 
         for chunk in chunks:
@@ -50,19 +52,49 @@ def insert_embeddings(df):
             texts.append(chunk[:2048])
             facts.append(str(row["fact"])[:2048])
             conclusions.append(str(row["conclusion"])[:512])
-            references.append(str(row.get("references", ""))[:2048])  # Added references
+            references.append(str(row.get("references", ""))[:2048])
 
-    data = [
-        embeddings,
-        titles,
-        contents,
-        texts,
-        facts,
-        conclusions,
-        references,  # Added references to data list
-    ]
+            # Check if batch size is reached
+            if len(embeddings) == batch_size:
+                data = [
+                    embeddings,
+                    titles,
+                    contents,
+                    texts,
+                    facts,
+                    conclusions,
+                    references,
+                ]
+                collection.insert(data)
+                inserted_count += len(embeddings)
+                print(f"Inserted batch of {len(embeddings)} chunks. Total inserted: {inserted_count}")
 
-    collection.insert(data)
+                # Clear lists for the next batch
+                embeddings = []
+                titles = []
+                contents = []
+                texts = []
+                facts = []
+                conclusions = []
+                references = []
+
+    # Insert any remaining data in the last batch
+    if embeddings:
+        data = [
+            embeddings,
+            titles,
+            contents,
+            texts,
+            facts,
+            conclusions,
+            references,
+        ]
+        collection.insert(data)
+        inserted_count += len(embeddings)
+        print(f"Inserted final batch of {len(embeddings)} chunks. Total inserted: {inserted_count}")
+
+
     collection.flush()
     collection.release()  # Release collection from memory
-    print(f"Inserted {len(embeddings)} chunks into Milvus.")
+    print(f"Finished inserting all chunks into Milvus. Total inserted: {inserted_count}")
+

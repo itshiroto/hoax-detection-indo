@@ -1,0 +1,66 @@
+from sentence_transformers import SentenceTransformer
+from pymilvus import Collection
+from umn_hoax_detect.vector_store import connect_milvus
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from tqdm import tqdm
+
+# Load the IndoBERT model once
+model = SentenceTransformer("LazarusNLP/all-indobert-base-v4")
+
+def embed_text(text: str) -> list[float]:
+    """Generate embeddings for text using the local model."""
+    embedding = model.encode(text, convert_to_numpy=True, normalize_embeddings=True)
+    return embedding.tolist()
+
+def insert_embeddings(df):
+    """
+    Process dataframe, chunk text, embed, and insert into Milvus.
+    """
+    connect_milvus()
+    # Assuming create_collection is called elsewhere to ensure the collection exists
+    collection = Collection("hoax_embeddings") # Use the collection name directly
+    collection.load() # Load collection into memory for insertion
+
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=512,
+        chunk_overlap=50,
+        separators=["\n\n", "\n", ".", " ", ""],
+    )
+
+    # Prepare lists for batch insert
+    embeddings = []
+    titles = []
+    contents = []
+    texts = []
+    facts = []
+    conclusions = []
+
+    for _, row in tqdm(df.iterrows(), total=len(df), desc="Embedding rows"):
+        # Use full concatenated text before truncation
+        chunks = splitter.split_text(row["text"])
+
+        for chunk in chunks:
+            emb = embed_text(chunk)
+            embeddings.append(emb)
+            titles.append(str(row["title"])[:512])
+            # Save original hoax content (truncated) as 'content' metadata
+            contents.append(str(row["content"])[:2048])
+            # Save chunk text (truncated) as 'text' metadata
+            texts.append(chunk[:2048])
+            facts.append(str(row["fact"])[:2048])
+            conclusions.append(str(row["conclusion"])[:512])
+
+    data = [
+        embeddings,
+        titles,
+        contents,
+        texts,
+        facts,
+        conclusions,
+    ]
+
+    collection.insert(data)
+    collection.flush()
+    collection.release() # Release collection from memory
+    print(f"Inserted {len(embeddings)} chunks into Milvus.")
+

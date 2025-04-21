@@ -1,4 +1,3 @@
-from sentence_transformers import SentenceTransformer
 from pymilvus import (
     connections,
     Collection,
@@ -8,17 +7,17 @@ from pymilvus import (
     utility,
     IndexType,
 )
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from umn_hoax_detect.config import (
     MILVUS_HOST,
     MILVUS_PORT,
     MILVUS_COLLECTION,
 )
 
-from tqdm import tqdm
-
-# Load the IndoBERT model once
-model = SentenceTransformer("LazarusNLP/all-indobert-base-v4")
+# The model and embedding/insertion functions are now in umn_hoax_detect/embeddings.py
+# from sentence_transformers import SentenceTransformer
+# from langchain.text_splitter import RecursiveCharacterTextSplitter
+# from tqdm import tqdm
+# model = SentenceTransformer("LazarusNLP/all-indobert-base-v4")
 
 
 SIMILARITY_THRESHOLD = 0.3  # Only keep results with cosine similarity >= 0.6
@@ -30,6 +29,8 @@ def search_similar_chunks(query, top_k=5, threshold=SIMILARITY_THRESHOLD):
     and return the metadata for those chunks, filtered by similarity threshold.
     """
     from pymilvus import Collection
+    # Import embed_text from the new embeddings file
+    from umn_hoax_detect.embeddings import embed_text
 
     connect_milvus()
     collection = Collection(MILVUS_COLLECTION)
@@ -55,7 +56,7 @@ def search_similar_chunks(query, top_k=5, threshold=SIMILARITY_THRESHOLD):
     hits = results[0]
     filtered_hits = [
         {
-            "score": hit.distance,
+            "score": 1 - hit.distance, # Convert distance back to cosine similarity
             "title": hit.entity.get("title"),
             "content": hit.entity.get("content"),
             "text": hit.entity.get("text"),
@@ -65,23 +66,34 @@ def search_similar_chunks(query, top_k=5, threshold=SIMILARITY_THRESHOLD):
         for hit in hits
         if 1 - hit.distance >= threshold  # cosine similarity = 1 - distance
     ]
+    collection.release() # Release collection from memory
     return filtered_hits
 
 
-def embed_text(text: str) -> list[float]:
-    embedding = model.encode(text, convert_to_numpy=True, normalize_embeddings=True)
-    return embedding.tolist()
+# The embed_text function is now in umn_hoax_detect/embeddings.py
+# def embed_text(text: str) -> list[float]:
+#     embedding = model.encode(text, convert_to_numpy=True, normalize_embeddings=True)
+#     return embedding.tolist()
 
 
 def connect_milvus():
-    connections.connect(alias="default", host=MILVUS_HOST, port=MILVUS_PORT)
+    """Connect to Milvus."""
+    try:
+        connections.connect(alias="default", host=MILVUS_HOST, port=MILVUS_PORT)
+        # print("Milvus connection successful.") # Optional: keep for debugging
+    except Exception as e:
+        print(f"Milvus connection failed: {e}")
+        # Handle connection failure appropriately, maybe raise an exception or return None
 
 
 def create_collection():
+    """Create Milvus collection if it doesn't exist and ensure index is present."""
+    connect_milvus()
     if utility.has_collection(MILVUS_COLLECTION):
         collection = Collection(MILVUS_COLLECTION)
         # Check if index exists, if not, create it
         if not collection.has_index():
+            print(f"Index not found for collection '{MILVUS_COLLECTION}'. Creating index...")
             collection.create_index(
                 field_name="embedding",
                 index_params={
@@ -90,9 +102,11 @@ def create_collection():
                     "params": {"nlist": 128},
                 },
             )
-        collection.load()
+            print("Index created.")
+        # collection.load() # No need to load here, load is done before search/insert
         return collection
 
+    print(f"Collection '{MILVUS_COLLECTION}' not found. Creating collection...")
     fields = [
         FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
         FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=768),
@@ -114,52 +128,54 @@ def create_collection():
             "params": {"nlist": 128},
         },
     )
+    print(f"Collection '{MILVUS_COLLECTION}' created with index.")
 
-    collection.load()
+    # collection.load() # No need to load here
     return collection
 
 
-def insert_embeddings(df):
-    connect_milvus()
-    collection = create_collection()
+# The insert_embeddings function is now in umn_hoax_detect/embeddings.py
+# def insert_embeddings(df):
+#     connect_milvus()
+#     collection = create_collection()
 
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=512,
-        chunk_overlap=50,
-        separators=["\n\n", "\n", ".", " ", ""],
-    )
+#     splitter = RecursiveCharacterTextSplitter(
+#         chunk_size=512,
+#         chunk_overlap=50,
+#         separators=["\n\n", "\n", ".", " ", ""],
+#     )
 
-    # Prepare lists for batch insert
-    embeddings = []
-    titles = []
-    contents = []
-    texts = []
-    facts = []
-    conclusions = []
+#     # Prepare lists for batch insert
+#     embeddings = []
+#     titles = []
+#     contents = []
+#     texts = []
+#     facts = []
+#     conclusions = []
 
-    for _, row in tqdm(df.iterrows(), total=len(df), desc="Embedding rows"):
-        # Use full concatenated text before truncation
-        chunks = splitter.split_text(row["text"])
+#     for _, row in tqdm(df.iterrows(), total=len(df), desc="Embedding rows"):
+#         # Use full concatenated text before truncation
+#         chunks = splitter.split_text(row["text"])
 
-        for chunk in chunks:
-            emb = embed_text(chunk)
-            embeddings.append(emb)
-            titles.append(str(row["title"])[:512])
-            # Save original hoax content (truncated) as 'content' metadata
-            contents.append(str(row["content"])[:2048])
-            # Save chunk text (truncated) as 'text' metadata
-            texts.append(chunk[:2048])
-            facts.append(str(row["fact"])[:2048])
-            conclusions.append(str(row["conclusion"])[:512])
+#         for chunk in chunks:
+#             emb = embed_text(chunk)
+#             embeddings.append(emb)
+#             titles.append(str(row["title"])[:512])
+#             # Save original hoax content (truncated) as 'content' metadata
+#             contents.append(str(row["content"])[:2048])
+#             # Save chunk text (truncated) as 'text' metadata
+#             texts.append(chunk[:2048])
+#             facts.append(str(row["fact"])[:2048])
+#             conclusions.append(str(row["conclusion"])[:512])
 
-    data = [
-        embeddings,
-        titles,
-        contents,
-        texts,
-        facts,
-        conclusions,
-    ]
+#     data = [
+#         embeddings,
+#         titles,
+#         contents,
+#         texts,
+#         facts,
+#         conclusions,
+#     ]
 
-    collection.insert(data)
-    collection.flush()
+#     collection.insert(data)
+#     collection.flush()

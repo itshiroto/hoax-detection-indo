@@ -1,6 +1,6 @@
 import argparse
 from umn_hoax_detect.data.loader import load_dataset
-from umn_hoax_detect.vector_store import insert_embeddings, search_similar_chunks
+from umn_hoax_detect.vector_store import insert_embeddings, search_similar_chunks, create_collection # Import create_collection
 import json
 import os
 from pathlib import Path
@@ -68,7 +68,7 @@ def build_prompt(user_query, retrieved_chunks, tavily_results=None):
             f"Content: {chunk['content']}\n"
             f"Fact: {chunk['fact']}\n"
             f"Conclusion: {chunk['conclusion']}\n"
-            f"Sumber: {chunk['title']}\n"
+            f"Sumber: {chunk['title']}\n" # This seems to be using title as source, might need adjustment
         )
     tavily_context = ""
     if tavily_results:
@@ -149,6 +149,9 @@ def main():
         help="Skip vector DB and only use Tavily news search",
     )
     args = parser.parse_args()
+
+    # Ensure the Milvus collection exists before attempting to use it
+    create_collection()
 
     if not args.skip_embedding and not args.tavily_only:
         df = load_dataset()

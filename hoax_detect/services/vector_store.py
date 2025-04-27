@@ -35,6 +35,7 @@ def create_collection() -> Collection:
         FieldSchema(name="content", dtype=DataType.VARCHAR, max_length=4096),
         FieldSchema(name="fact", dtype=DataType.VARCHAR, max_length=1024),
         FieldSchema(name="conclusion", dtype=DataType.VARCHAR, max_length=1024),
+        FieldSchema(name="references", dtype=DataType.JSON),
         FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=768),
     ]
 
@@ -61,6 +62,7 @@ def insert_data(entities: List[List]) -> int:
                 [contents],
                 [facts],
                 [conclusions],
+                [references],
                 [embeddings]
             ]
 
@@ -77,7 +79,7 @@ def batch_insert_data(df, batch_size: int = 32) -> int:
     """Batch insert dataframe into Milvus with progress tracking.
 
     Args:
-        df: DataFrame containing columns: title, content, fact, conclusion
+        df: DataFrame containing columns: title, content, fact, conclusion, references
         batch_size: Number of records per batch
 
     Returns:
@@ -91,6 +93,7 @@ def batch_insert_data(df, batch_size: int = 32) -> int:
             batch.content.tolist(),
             batch.fact.tolist(),
             batch.conclusion.tolist(),
+            batch.references.tolist(),
             [embed_text(row.content) for _, row in batch.iterrows()],
         ]
         total_inserted += insert_data(entities)
@@ -115,7 +118,7 @@ def search_similar_chunks(
         anns_field="embedding",
         param=search_params,
         limit=top_k,
-        output_fields=["title", "content", "fact", "conclusion"],
+        output_fields=["title", "content", "fact", "conclusion", "references"],
     )
 
     return [
@@ -124,6 +127,7 @@ def search_similar_chunks(
             content=hit.entity.get("content"),
             fact=hit.entity.get("fact"),
             conclusion=hit.entity.get("conclusion"),
+            references=hit.entity.get("references", []),
         )
         for hit in results[0]
         if hit.score >= threshold

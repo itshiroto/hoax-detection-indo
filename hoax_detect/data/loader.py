@@ -23,8 +23,9 @@ def load_dataset() -> pd.DataFrame:
         df = df.dropna(subset=settings.COLUMNS)
         df = df[settings.COLUMNS]
 
-        # Truncate fact and conclusion to max 2048 characters
-        df['fact'] = df['fact'].str.slice(0, 2048)
+        # Combine content and fact into text column
+        df['text'] = df['content'] + " " + df['fact']
+        df['text'] = df['text'].str.slice(0, 8192)
         df['conclusion'] = df['conclusion'].str.slice(0, 2048)
 
         return df

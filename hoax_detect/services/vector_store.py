@@ -35,8 +35,7 @@ def create_collection() -> Collection:
     fields = [
         FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
         FieldSchema(name="title", dtype=DataType.VARCHAR, max_length=512),
-        FieldSchema(name="content", dtype=DataType.VARCHAR, max_length=4096),
-        FieldSchema(name="fact", dtype=DataType.VARCHAR, max_length=2048),
+        FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=8192),
         FieldSchema(name="conclusion", dtype=DataType.VARCHAR, max_length=2048),
         FieldSchema(name="references", dtype=DataType.VARCHAR, max_length=2048),
         FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=768),
@@ -62,8 +61,7 @@ def insert_data(entities: List[List]) -> int:
         entities: List of entity lists in format:
             [
                 [titles],
-                [contents],
-                [facts],
+                [texts],
                 [conclusions],
                 [references],
                 [embeddings]
@@ -82,7 +80,7 @@ def batch_insert_data(df, batch_size: int = 32) -> int:
     """Batch insert dataframe into Milvus with progress tracking.
 
     Args:
-        df: DataFrame containing columns: title, content, fact, conclusion, references
+        df: DataFrame containing columns: title, text, conclusion, references
         batch_size: Number of records per batch
 
     Returns:
@@ -93,11 +91,10 @@ def batch_insert_data(df, batch_size: int = 32) -> int:
         batch = df.iloc[i : i + batch_size]
         entities = [
             batch.title.tolist(),
-            batch.content.tolist(),
-            batch.fact.tolist(),
+            batch.text.tolist(),
             batch.conclusion.tolist(),
             batch.references.tolist(),
-            [embed_text(row.content) for _, row in batch.iterrows()],
+            [embed_text(row.text) for _, row in batch.iterrows()],
         ]
         total_inserted += insert_data(entities)
     return total_inserted
@@ -121,14 +118,13 @@ def search_similar_chunks(
         anns_field="embedding",
         param=search_params,
         limit=top_k,
-        output_fields=["title", "content", "fact", "conclusion", "references"],
+        output_fields=["title", "text", "conclusion", "references"],
     )
 
     return [
         HoaxChunk(
             title=hit.entity.get("title"),
-            content=hit.entity.get("content"),
-            fact=hit.entity.get("fact"),
+            text=hit.entity.get("text"),
             conclusion=hit.entity.get("conclusion"),
             references=hit.entity.get("references"),
         )

@@ -52,7 +52,7 @@ def build_prompt(
             f"Content: {chunk.content}\n"
             f"Fact: {chunk.fact}\n"
             f"Conclusion: {chunk.conclusion}\n"
-            f"References: {', '.join(chunk.references) if chunk.references else 'None'}\n"
+            f"References: {chunk.references if chunk.references else 'None'}\n"
         )
 
     if tavily_results:

@@ -35,7 +35,7 @@ def create_collection() -> Collection:
         FieldSchema(name="content", dtype=DataType.VARCHAR, max_length=4096),
         FieldSchema(name="fact", dtype=DataType.VARCHAR, max_length=1024),
         FieldSchema(name="conclusion", dtype=DataType.VARCHAR, max_length=1024),
-        FieldSchema(name="references", dtype=DataType.JSON),
+        FieldSchema(name="references", dtype=DataType.VARCHAR, max_length=1024),
         FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=768),
     ]
 

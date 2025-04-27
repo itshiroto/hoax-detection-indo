@@ -22,5 +22,5 @@ class HoaxChunk(BaseModel):
     content: str
     fact: str
     conclusion: str
-    references: List[str] = []
+    references: str = ""
     embedding: Optional[List[float]] = None

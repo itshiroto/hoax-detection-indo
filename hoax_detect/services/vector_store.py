@@ -18,7 +18,10 @@ SIMILARITY_THRESHOLD = 0.3
 def connect_milvus():
     """Connect to Milvus vector database."""
     connections.connect(
-        alias="default", host=settings.MILVUS_HOST, port=settings.MILVUS_PORT
+        alias="default",
+        host=settings.MILVUS_HOST,
+        port=settings.MILVUS_PORT,
+        token=settings.MILVUS_TOKEN,
     )
 
 
@@ -33,9 +36,9 @@ def create_collection() -> Collection:
         FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
         FieldSchema(name="title", dtype=DataType.VARCHAR, max_length=512),
         FieldSchema(name="content", dtype=DataType.VARCHAR, max_length=4096),
-        FieldSchema(name="fact", dtype=DataType.VARCHAR, max_length=1024),
-        FieldSchema(name="conclusion", dtype=DataType.VARCHAR, max_length=1024),
-        FieldSchema(name="references", dtype=DataType.VARCHAR, max_length=1024),
+        FieldSchema(name="fact", dtype=DataType.VARCHAR, max_length=2048),
+        FieldSchema(name="conclusion", dtype=DataType.VARCHAR, max_length=2048),
+        FieldSchema(name="references", dtype=DataType.VARCHAR, max_length=2048),
         FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=768),
     ]
 

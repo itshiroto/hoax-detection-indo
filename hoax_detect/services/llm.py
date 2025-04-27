@@ -70,7 +70,7 @@ def build_prompt(
         f"\nRetrieved Context:\n{context}\n"
         "Based on the above information, determine if the user query is factual or a hoax. "
         "Provide:\n"
-        "1. A clear verdict (HOAX or FACT)\n"
+        "1. A clear verdict (HOAKS or FAKTA)\n"
         "2. A detailed explanation in Indonesian\n"
         "3. Sources used (if any)\n"
     )

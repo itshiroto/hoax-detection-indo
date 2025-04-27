@@ -23,9 +23,11 @@ def load_dataset() -> pd.DataFrame:
         df = df.dropna(subset=settings.COLUMNS)
         df = df[settings.COLUMNS]
 
-        # Combine content and fact into text column
+        # Create combined text for embedding (content + fact)
         df['text'] = df['content'] + " " + df['fact']
         df['text'] = df['text'].str.slice(0, 8192)
+        df['content'] = df['content'].str.slice(0, 4096)
+        df['fact'] = df['fact'].str.slice(0, 2048)
         df['conclusion'] = df['conclusion'].str.slice(0, 2048)
 
         return df

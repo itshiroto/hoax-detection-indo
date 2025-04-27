@@ -1,14 +1,19 @@
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Optional
+from typing import List
 from hoax_detect.services import (
     search_similar_chunks,
     call_tavily_api,
     call_openrouter,
-    build_prompt
+    build_prompt,
 )
-from hoax_detect.models import FactCheckRequest, FactCheckResponse, NewsResult, HoaxChunk
-from hoax_detect.config import settings
+from hoax_detect.models import (
+    FactCheckRequest,
+    FactCheckResponse,
+    NewsResult,
+    HoaxChunk,
+)
 from pydantic import BaseModel
 
 app = FastAPI(
@@ -16,7 +21,7 @@ app = FastAPI(
     description="API for fact checking Indonesian news using RAG with Milvus and Tavily.",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
 )
 
 app.add_middleware(
@@ -26,27 +31,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 class BatchFactCheckRequest(BaseModel):
     queries: List[str]
     use_vector_db: bool = True
     use_tavily: bool = True
+
+
+load_dotenv()
+
 
 @app.post("/fact_check", response_model=FactCheckResponse)
 async def fact_check(request: FactCheckRequest) -> FactCheckResponse:
     """Main fact checking endpoint."""
     try:
         chunks, web_results = await _retrieve_context(request)
-        
+
         prompt = build_prompt(request.query, chunks, web_results)
         llm_response = call_openrouter(prompt)
-        
+
         if not llm_response:
             raise HTTPException(status_code=500, detail="LLM service error")
 
         return _format_response(llm_response, web_results)
 
     except Exception as e:
+        print(str(e))
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/batch_fact_check", response_model=List[FactCheckResponse])
 async def batch_fact_check(request: BatchFactCheckRequest) -> List[FactCheckResponse]:
@@ -56,45 +68,50 @@ async def batch_fact_check(request: BatchFactCheckRequest) -> List[FactCheckResp
         single_request = FactCheckRequest(
             query=query,
             use_vector_db=request.use_vector_db,
-            use_tavily=request.use_tavily
+            use_tavily=request.use_tavily,
         )
         results.append(await fact_check(single_request))
     return results
 
-async def _retrieve_context(request: FactCheckRequest) -> tuple[List[HoaxChunk], List[NewsResult]]:
+
+async def _retrieve_context(
+    request: FactCheckRequest,
+) -> tuple[List[HoaxChunk], List[NewsResult]]:
     """Retrieve both vector DB chunks and web search results."""
     chunks: List[HoaxChunk] = []
     if request.use_vector_db:
         chunks = search_similar_chunks(request.query)
-    
+
     web_results: List[NewsResult] = []
     if request.use_tavily:
         web_results = call_tavily_api(request.query)
-    
+
     return chunks, web_results
 
-def _format_response(llm_response: str, web_results: List[NewsResult]) -> FactCheckResponse:
+
+def _format_response(
+    llm_response: str, web_results: List[NewsResult]
+) -> FactCheckResponse:
     """Format the LLM response into a structured FactCheckResponse."""
     verdict = (
-        "HOAX" if "HOAX" in llm_response.upper() 
-        else "FACT" if "FACT" in llm_response.upper()
+        "HOAX"
+        if "HOAX" in llm_response.upper()
+        else "FACT"
+        if "FACT" in llm_response.upper()
         else "UNCERTAIN"
     )
     return FactCheckResponse(
         verdict=verdict,
         explanation=llm_response,
-        sources=[res.url for res in web_results] if web_results else []
+        sources=[res.url for res in web_results] if web_results else [],
     )
+
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
     return {
         "status": "healthy",
-        "services": [
-            "milvus_vector_db",
-            "tavily_web_search",
-            "openrouter_llm"
-        ],
-        "version": "1.0.0"
+        "services": ["milvus_vector_db", "tavily_web_search", "openrouter_llm"],
+        "version": "1.0.0",
     }

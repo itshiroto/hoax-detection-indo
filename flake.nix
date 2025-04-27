@@ -35,6 +35,7 @@
 
               langgraph
               pydantic
+              pydantic-settings
               python-dotenv
               pymilvus
             ]);

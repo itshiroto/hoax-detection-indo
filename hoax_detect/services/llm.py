@@ -3,7 +3,10 @@ import requests
 from typing import List, Dict, Optional
 from hoax_detect.models import HoaxChunk, NewsResult
 
-def call_openrouter(prompt: str, model: str = "google/gemini-2.0-flash-lite-001", max_tokens: int = 1024) -> Optional[str]:
+
+def call_openrouter(
+    prompt: str, model: str = "google/gemini-2.0-flash-lite-001", max_tokens: int = 1024
+) -> Optional[str]:
     """Call OpenRouter API with the constructed prompt."""
     api_key = os.getenv("OPENROUTER_API_KEY")
     if not api_key:
@@ -25,7 +28,7 @@ def call_openrouter(prompt: str, model: str = "google/gemini-2.0-flash-lite-001"
         ],
         "max_tokens": max_tokens,
     }
-    
+
     try:
         response = requests.post(url, headers=headers, json=payload, timeout=60)
         response.raise_for_status()
@@ -34,19 +37,23 @@ def call_openrouter(prompt: str, model: str = "google/gemini-2.0-flash-lite-001"
     except Exception as e:
         raise RuntimeError(f"OpenRouter API error: {e}")
 
-def build_prompt(user_query: str, retrieved_chunks: List[HoaxChunk], tavily_results: List[NewsResult] = None) -> str:
+
+def build_prompt(
+    user_query: str,
+    retrieved_chunks: List[HoaxChunk],
+    tavily_results: List[NewsResult] = None,
+) -> str:
     """Build a prompt for the LLM using the user query and retrieved context."""
     context = "Database Results:\n\n"
     for i, chunk in enumerate(retrieved_chunks, 1):
         context += (
             f"\n---\n"
-            f"Hoax Chunk {i}:\n"
             f"Title: {chunk.title}\n"
             f"Content: {chunk.content}\n"
             f"Fact: {chunk.fact}\n"
             f"Conclusion: {chunk.conclusion}\n"
         )
-    
+
     if tavily_results:
         context += "\n\nWeb Search Results:"
         for i, res in enumerate(tavily_results, 1):
@@ -57,7 +64,7 @@ def build_prompt(user_query: str, retrieved_chunks: List[HoaxChunk], tavily_resu
                 f"Content: {res.content}\n"
                 f"Score: {res.score}\n"
             )
-    
+
     return (
         f"User Query:\n{user_query}\n"
         f"\nRetrieved Context:\n{context}\n"

@@ -11,7 +11,7 @@ def fact_check(
     """Call the fact checking API endpoint."""
     try:
         response = requests.post(
-            settings.FACTCHECK_API_URL,
+            settings.FACTCHECK_API_URL_CLI,
             json=FactCheckRequest(
                 query=query, use_vector_db=use_vector_db, use_tavily=use_tavily
             ).model_dump(),

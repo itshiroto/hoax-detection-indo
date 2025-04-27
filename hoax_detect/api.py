@@ -1,7 +1,6 @@
-from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List
+from typing import List, Optional
 from hoax_detect.services import (
     search_similar_chunks,
     call_tavily_api,
@@ -14,7 +13,10 @@ from hoax_detect.models import (
     NewsResult,
     HoaxChunk,
 )
+from hoax_detect.config import settings
 from pydantic import BaseModel
+import logging
+import sys
 
 app = FastAPI(
     title="Hoax News Fact Checking API",
@@ -31,29 +33,41 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Configure logging to stdout
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    stream=sys.stdout,
+)
+
 
 class BatchFactCheckRequest(BaseModel):
     queries: List[str]
     use_vector_db: bool = True
     use_tavily: bool = True
-
-
-load_dotenv()
+    verbose: bool = False
 
 
 @app.post("/fact_check", response_model=FactCheckResponse)
-async def fact_check(request: FactCheckRequest) -> FactCheckResponse:
+async def fact_check(
+    request: FactCheckRequest, verbose: bool = False
+) -> FactCheckResponse:
     """Main fact checking endpoint."""
     try:
         chunks, web_results = await _retrieve_context(request)
 
         prompt = build_prompt(request.query, chunks, web_results)
+
+        if verbose:
+            logging.info("\n=== LLM PROMPT ===\n%s\n=== END PROMPT ===", prompt)
+
         llm_response = call_openrouter(prompt)
 
         if not llm_response:
             raise HTTPException(status_code=500, detail="LLM service error")
 
-        return _format_response(llm_response, web_results)
+        response = _format_response(llm_response, web_results)
+        return response
 
     except Exception as e:
         print(str(e))
@@ -70,7 +84,7 @@ async def batch_fact_check(request: BatchFactCheckRequest) -> List[FactCheckResp
             use_vector_db=request.use_vector_db,
             use_tavily=request.use_tavily,
         )
-        results.append(await fact_check(single_request))
+        results.append(await fact_check(single_request, verbose=request.verbose))
     return results
 
 

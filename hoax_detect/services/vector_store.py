@@ -127,7 +127,7 @@ def search_similar_chunks(
             content=hit.entity.get("content"),
             fact=hit.entity.get("fact"),
             conclusion=hit.entity.get("conclusion"),
-            references=hit.entity.get("references", []),
+            references=hit.entity.get("references"),
         )
         for hit in results[0]
         if hit.score >= threshold

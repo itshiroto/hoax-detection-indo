@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     FACTCHECK_API_URL: str = os.getenv(
         "FACTCHECK_API_URL", "http://localhost:8000/fact_check"
     )
+    FACTCHECK_API_URL_CLI: str = os.getenv(
+        "FACTCHECK_API_URL", "http://localhost:8000/fact_check?verbose=true"
+    )
 
     class Config:
         env_file = ".env"

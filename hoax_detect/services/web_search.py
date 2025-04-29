@@ -2,8 +2,9 @@ import json
 import os
 import requests
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List
 from hoax_detect.models import NewsResult
+
 
 def load_trusted_domains() -> List[str]:
     """Load the list of trusted domains from JSON file."""
@@ -13,6 +14,7 @@ def load_trusted_domains() -> List[str]:
             return json.load(f)
     except Exception as e:
         raise RuntimeError(f"Error loading trusted domains: {e}")
+
 
 def call_tavily_api(query: str, max_results: int = 3) -> List[NewsResult]:
     """Call the Tavily API to search for news articles."""
@@ -32,7 +34,7 @@ def call_tavily_api(query: str, max_results: int = 3) -> List[NewsResult]:
         "search_type": "news",
         "include_domains": trusted_domains if trusted_domains else None,
     }
-    
+
     try:
         response = requests.post(url, headers=headers, json=payload, timeout=30)
         response.raise_for_status()
@@ -42,7 +44,7 @@ def call_tavily_api(query: str, max_results: int = 3) -> List[NewsResult]:
                 title=res.get("title"),
                 url=res.get("url"),
                 content=res.get("content"),
-                score=res.get("score", 0)
+                score=res.get("score", 0),
             )
             for res in data.get("results", [])
         ]

@@ -35,10 +35,10 @@ def create_collection() -> Collection:
     fields = [
         FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
         FieldSchema(name="title", dtype=DataType.VARCHAR, max_length=512),
-        FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=8192),
-        FieldSchema(name="content", dtype=DataType.VARCHAR, max_length=4096),
-        FieldSchema(name="fact", dtype=DataType.VARCHAR, max_length=2048),
-        FieldSchema(name="conclusion", dtype=DataType.VARCHAR, max_length=2048),
+        FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=10240),
+        FieldSchema(name="content", dtype=DataType.VARCHAR, max_length=5000),
+        FieldSchema(name="fact", dtype=DataType.VARCHAR, max_length=5000),
+        FieldSchema(name="conclusion", dtype=DataType.VARCHAR, max_length=5000),
         FieldSchema(name="references", dtype=DataType.VARCHAR, max_length=2048),
         FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=768),
     ]

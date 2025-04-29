@@ -1,6 +1,7 @@
-from fastapi import FastAPI, HTTPException, Request
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Optional
+from typing import List
 from hoax_detect.services import (
     search_similar_chunks,
     call_tavily_api,
@@ -13,10 +14,11 @@ from hoax_detect.models import (
     NewsResult,
     HoaxChunk,
 )
-from hoax_detect.config import settings
 from pydantic import BaseModel
 import logging
 import sys
+
+load_dotenv()
 
 app = FastAPI(
     title="Hoax News Fact Checking API",

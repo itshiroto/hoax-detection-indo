@@ -1,6 +1,6 @@
 import os
 import requests
-from typing import List, Dict, Optional
+from typing import List, Optional
 from hoax_detect.models import HoaxChunk, NewsResult
 
 

@@ -74,7 +74,3 @@ The application also provides a FastAPI API.  Refer to `hoax_detect/api.py` for 
 ## Configuration
 
 Configuration settings, such as the dataset path, are defined in `hoax_detect/config.py`. You can modify these settings by creating a `.env` file in the project root directory. See `.env.example` for the available options.
-
-## Contributing
-
-Contributions are welcome! Please submit a pull request with your changes.

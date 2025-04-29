@@ -1,1 +1,16 @@
-
+flake8
+pandas
+requests
+fastapi
+uvicorn
+gradio
+openai
+langchain
+langchain-community
+langchain-core
+sentence-transformers
+langgraph
+pydantic
+pydantic-settings
+python-dotenv
+pymilvus
